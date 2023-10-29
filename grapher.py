@@ -6,7 +6,7 @@ import re
 import warnings
 from datetime import datetime, timedelta
 
-def plot_access_time_count(csv_file, column_name, days_ago):
+def plot_access_time_count(csv_file, column_name, num_buckets, bucket_size):
     # Suppress warnings related to unused columns
     warnings.filterwarnings("ignore", message="Columns.*not found in file")
 
@@ -52,37 +52,52 @@ def plot_access_time_count(csv_file, column_name, days_ago):
     # Find the maximum time in the DataFrame
     max_time = df['UTC Time'].max()
 
-    # Calculate the date before the maximum time based on the specified number of days
-    days_ago_date = max_time - timedelta(days=days_ago)
+    # Calculate the date before the maximum time based on the number of buckets and bucket size
+    days_ago_date = max_time - timedelta(hours=num_buckets * bucket_size)
 
-    # Filter the DataFrame to include only the data from the specified number of days ago
+    # Filter the DataFrame to include only the data within the specified number of buckets
     df = df[df['UTC Time'] >= days_ago_date]
 
-    # Create a bar graph
-    day_buckets = df['UTC Time'].dt.date
-    day_counts = day_buckets.value_counts().sort_index()
+    # Create a line graph
+    bucket_delta = timedelta(hours=bucket_size)
+    bucket_end = max_time
+    bucket_start = bucket_end - bucket_delta
 
-    # Create the bar graph
-    plt.bar(day_counts.index, day_counts.values)
-    plt.xlabel('Day')
+    buckets = []
+    counts = []
+
+    while bucket_start >= days_ago_date:
+        counts.append(((df['UTC Time'] >= bucket_start) & (df['UTC Time'] <= bucket_end)).sum())
+        buckets.append(bucket_start)
+        bucket_end = bucket_start
+        bucket_start -= bucket_delta
+
+    buckets.reverse()
+    counts.reverse()
+
+    # Create the line graph
+    plt.plot(buckets, counts, marker='o', linestyle='-')
+    plt.xlabel('Time')
     plt.ylabel('Count')
-    plt.title(f'Access Time Count for the Last {days_ago} Days ({column_name})')
+    plt.title(f'Access Time Count ({column_name})')
     plt.xticks(rotation=45)  # Rotate x-axis labels for better visibility
+    plt.grid(True)
 
-    # Add count values as labels on top of each bar
-    for x, y in zip(day_counts.index, day_counts.values):
-        plt.text(x, y, str(y), ha='center', va='bottom')
+    # Add count values as labels near the data points
+    for x, y in zip(buckets, counts):
+        plt.annotate(y, (x, y), textcoords="offset points", xytext=(0, 5), ha='center')
 
     plt.show()
 
 def main():
-    parser = argparse.ArgumentParser(description='Generate a bar graph of Access Time data from a CSV file.')
+    parser = argparse.ArgumentParser(description='Generate a line graph of Access Time data from a CSV file.')
     parser.add_argument('-f', '--file', required=True, help='CSV file name')
     parser.add_argument('-c', '--column', required=True, help='Column name for Access Time data')
-    parser.add_argument('-d', '--days', type=int, default=30, help='Number of days before the maximum time')
+    parser.add_argument('-n', '--num_buckets', type=int, default=30, help='Number of buckets')
+    parser.add_argument('-s', '--bucket_size', type=int, default=24, help='Bucket size in hours')
     args = parser.parse_args()
     
-    plot_access_time_count(args.file, args.column, args.days)
+    plot_access_time_count(args.file, args.column, args.num_buckets, args.bucket_size)
 
 if __name__ == '__main__':
     main()
