@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import re
 import warnings
 from datetime import datetime, timedelta
+import numpy as np
+import statistics
 
 def plot_access_time_count(csv_file, column_name, num_buckets, bucket_size):
     # Suppress warnings related to unused columns
@@ -49,8 +51,15 @@ def plot_access_time_count(csv_file, column_name, num_buckets, bucket_size):
     # Apply the conversion function to the specified column
     df['UTC Time'] = df[column_name].apply(convert_to_utc)
 
-    # Find the maximum time in the DataFrame
+    # Create a line graph
+    bucket_delta = timedelta(hours=bucket_size)
+
+    # Calculate the maximum time in the DataFrame
     max_time = df['UTC Time'].max()
+
+    if max_time is pd.NaT:
+        print("No valid 'Access Time' data found.")
+        return
 
     # Calculate the date before the maximum time based on the number of buckets and bucket size
     days_ago_date = max_time - timedelta(hours=num_buckets * bucket_size)
@@ -58,36 +67,57 @@ def plot_access_time_count(csv_file, column_name, num_buckets, bucket_size):
     # Filter the DataFrame to include only the data within the specified number of buckets
     df = df[df['UTC Time'] >= days_ago_date]
 
-    # Create a line graph
-    bucket_delta = timedelta(hours=bucket_size)
-    bucket_end = max_time
-    bucket_start = bucket_end - bucket_delta
-
+    # Initialize lists to store data
     buckets = []
     counts = []
 
-    while bucket_start >= days_ago_date:
-        counts.append(((df['UTC Time'] >= bucket_start) & (df['UTC Time'] <= bucket_end)).sum())
-        buckets.append(bucket_start)
+    # Iterate through time buckets
+    bucket_end = max_time
+    while bucket_end >= days_ago_date:
+        bucket_start = bucket_end - bucket_delta
+        bucket_data = df[(df['UTC Time'] >= bucket_start) & (df['UTC Time'] <= bucket_end)]
+        count = len(bucket_data)
+        if count > 0:
+            buckets.append(bucket_start)
+            counts.append(count)
         bucket_end = bucket_start
-        bucket_start -= bucket_delta
 
     buckets.reverse()
     counts.reverse()
+
+    # Convert counts to regular Python integers for standard deviation calculation
+    counts = [int(count) for count in counts]
+
+    # Calculate the mean and standard deviation of counts
+    mean_count = statistics.mean(counts)
+    std_deviation = statistics.stdev(counts)
+
+    # Calculate the spike threshold
+    spike_threshold = mean_count + std_deviation
+
+    # Find the last Access Time bucket with a Count value greater than 0
+    last_positive_count_index = None
+    for i, count in enumerate(counts):
+        if count > 0:
+            last_positive_count_index = i
 
     # Create the line graph
     plt.plot(buckets, counts, marker='o', linestyle='-')
     plt.xlabel('Time')
     plt.ylabel('Count')
-    plt.title(f'Access Time Count ({column_name})')
-    plt.xticks(rotation=45)  # Rotate x-axis labels for better visibility
+    plt.title(f'Time Grouping Count ({column_name})')
+    
+    # Format x-axis labels vertically with the format "%m-%d %H:%M:%S"
+    plt.xticks(rotation=90)
     plt.grid(True)
 
-    # Add count values as labels near the data points
-    for x, y in zip(buckets, counts):
-        plt.annotate(y, (x, y), textcoords="offset points", xytext=(0, 5), ha='center')
+    # Add count values as labels near the data points that are at least 1 std deviation above the mean
+    for i, (x, y) in enumerate(zip(buckets, counts)):
+        if y >= spike_threshold or i == last_positive_count_index:
+            plt.annotate(y, (x, y), textcoords="offset points", xytext=(0, 5), ha='center')
 
     plt.show()
+
 
 def main():
     parser = argparse.ArgumentParser(description='Generate a line graph of Access Time data from a CSV file.')
