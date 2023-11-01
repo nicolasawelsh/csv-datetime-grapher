@@ -7,8 +7,13 @@ import warnings
 from datetime import datetime, timedelta
 import numpy as np
 import statistics
+import os
 
 def plot_access_time_count(csv_file, column_name, num_buckets, bucket_size, csv_file2=None):
+    # Extract file names from the provided file paths
+    file_name1 = os.path.basename(csv_file)
+    file_name2 = os.path.basename(csv_file2) if csv_file2 else None
+
     # Suppress warnings related to unused columns
     warnings.filterwarnings("ignore", message="Columns.*not found in file")
 
@@ -58,7 +63,7 @@ def plot_access_time_count(csv_file, column_name, num_buckets, bucket_size, csv_
     max_time = df1['UTC Time'].max()
 
     if max_time is pd.NaT:
-        print("No valid 'Access Time' data found for the first CSV file.")
+        print(f"No valid 'Access Time' data found for {file_name1}.")
         return
 
     # Calculate the date before the maximum time based on the number of buckets and bucket size
@@ -102,8 +107,8 @@ def plot_access_time_count(csv_file, column_name, num_buckets, bucket_size, csv_
             last_positive_count_index1 = i
 
     # Create the line graph for the first CSV data
-    plt.plot(buckets1, counts1, marker='o', linestyle='-', label='File 1')
-    
+    plt.plot(buckets1, counts1, marker='o', linestyle='-', label=file_name1)
+
     if csv_file2:
         # Read the second CSV data from the specified file, selecting only the specified column
         df2 = pd.read_csv(csv_file2, usecols=[column_name])
@@ -118,7 +123,7 @@ def plot_access_time_count(csv_file, column_name, num_buckets, bucket_size, csv_
         max_time2 = df2['UTC Time'].max()
 
         if max_time2 is pd.NaT:
-            print("No valid 'Access Time' data found for the second CSV file.")
+            print(f"No valid 'Access Time' data found for {file_name2}.")
         else:
             # Calculate the date before the maximum time based on the number of buckets and bucket size for the second CSV
             days_ago_date2 = max_time2 - timedelta(hours=num_buckets * bucket_size)
@@ -161,12 +166,12 @@ def plot_access_time_count(csv_file, column_name, num_buckets, bucket_size, csv_
                     last_positive_count_index2 = i
 
             # Create the line graph for the second CSV data
-            plt.plot(buckets2, counts2, marker='o', linestyle='-', label='File 2')
+            plt.plot(buckets2, counts2, marker='o', linestyle='-', label=file_name2)
 
     plt.xlabel('Time')
     plt.ylabel('Count')
     plt.title(f'Time Grouping Count ({column_name})')
-    
+
     # Format x-axis labels vertically with the format "%m-%d %H:%M:%S"
     plt.xticks(rotation=90)
     plt.grid(True)
@@ -185,6 +190,7 @@ def plot_access_time_count(csv_file, column_name, num_buckets, bucket_size, csv_
     plt.legend()
     plt.show()
 
+
 def main():
     parser = argparse.ArgumentParser(description='Generate a line graph of Access Time data from CSV files.')
     parser.add_argument('-f', '--file', required=True, help='First CSV file name')
@@ -193,7 +199,7 @@ def main():
     parser.add_argument('-n', '--num_buckets', type=int, default=30, help='Number of buckets')
     parser.add_argument('-s', '--bucket_size', type=int, default=24, help='Bucket size in hours')
     args = parser.parse_args()
-    
+
     plot_access_time_count(args.file, args.column, args.num_buckets, args.bucket_size, args.file2)
 
 if __name__ == '__main__':
