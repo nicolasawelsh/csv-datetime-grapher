@@ -68,6 +68,7 @@ def main():
     parser.add_argument("-s", "--start_time", help="Start time in the format '%Y-%m-%d %H:%M:%S'", required=True)
     parser.add_argument("-e", "--end_time", help="End time in the format '%Y-%m-%d %H:%M:%S'", required=True)
     parser.add_argument("-a", "--autopsy_deleted", action='store_true')
+    parser.add_argument("-o", "--output_csv", default="hist.csv")
     args = parser.parse_args()
 
     df = pd.read_csv(args.file, usecols=[args.column])
@@ -78,7 +79,7 @@ def main():
     hist, bins = generate_histogram(time_data, args.start_time, args.end_time, args.bucket_size, args.autopsy_deleted)
 
     # Save histogram data to CSV file
-    save_to_csv(hist, bins, "hist.csv")
+    save_to_csv(hist, bins, args.output_csv)
 
     plt.hist(bins[:-1], bins, weights=hist)
     plt.xlabel("Time")
