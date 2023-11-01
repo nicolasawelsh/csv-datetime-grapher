@@ -54,7 +54,7 @@ The script will display a histogram plot and save the histogram data in a CSV fi
 Here's an example command to run the script:
 
 ```
-python time-histogram.py -f autopsy_deleted_files.csv -c "Access Time" -b 60 -s "2023-01-01 00:00:00" -e "2023-01-02 00:00:00" -a
+python time-histogram.py -f autopsy_deleted_files.csv -c "Access Time" -b 60 -s "2023-10-20 00:00:00" -e "2023-10-30 00:00:00" -a
 ```
 
 This will generate a time histogram for the "timestamp" column in the "data.csv" file, with a bucket size of 30 minutes, covering the date range from January 1, 2023, to January 2, 2023, considering timestamps with timezone information.
@@ -62,18 +62,3 @@ This will generate a time histogram for the "timestamp" column in the "data.csv"
 # License
 
 This script is provided under the MIT License. See the LICENSE file for details.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
