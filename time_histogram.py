@@ -5,14 +5,13 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from dateutil import parser
 import re
+import csv
 
 def is_pst_pdt_format(time_str):
     pst_pdt_pattern = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [A-Za-z]+")
     return bool(pst_pdt_pattern.match(time_str))
 
 def convert_to_utc(time_str):
-    print("Converting to UTC")
-
     if "PST" in time_str:
         offset = -8
     elif "PDT" in time_str:
@@ -31,7 +30,6 @@ def parse_datetime(time_str):
         # Handle invalid or unexpected timestamp format
         return None
 
-
 def generate_histogram(data, start_time, end_time, bucket_size):
     start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
     end_time = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
@@ -40,6 +38,13 @@ def generate_histogram(data, start_time, end_time, bucket_size):
     
     hist, bins = np.histogram(data, bins)
     return hist, bins
+
+def save_to_csv(hist, bins, file_name):
+    with open(file_name, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["Bucket Start", "Bucket End", "Count"])
+        for i in range(len(bins) - 1):
+            writer.writerow([bins[i], bins[i + 1], hist[i]])
 
 def main():
     parser = argparse.ArgumentParser(description="Generate a time histogram from a CSV file.")
@@ -54,10 +59,11 @@ def main():
     time_data = df[args.column].tolist()
 
     time_data = [convert_to_utc(time_str) if is_pst_pdt_format(time_str) else parse_datetime(time_str) for time_str in time_data]
-    #print(time_data)
     time_data = [time for time in time_data if time is not None]
-    #print(time_data)
     hist, bins = generate_histogram(time_data, args.start_time, args.end_time, args.bucket_size)
+
+    # Save histogram data to CSV file
+    save_to_csv(hist, bins, "hist.csv")
 
     plt.hist(bins[:-1], bins, weights=hist)
     plt.xlabel("Time")
