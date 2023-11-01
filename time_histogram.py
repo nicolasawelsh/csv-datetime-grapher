@@ -11,9 +11,9 @@ import re
 
 # Custom tzinfos dict
 tzinfos = {
-    "PST": pytz.FixedOffset(-8*60),  # UTC-8 for PST
+    "PST": pytz.FixedOffset(-7*60),  # UTC-8 for PST
     "PDT": pytz.FixedOffset(-7*60),  # UTC-7 for PDT
-    "MST": pytz.FixedOffset(-7*60),  # UTC-7 for MST
+    "MST": pytz.FixedOffset(-6*60),  # UTC-7 for MST
     "GMT": pytz.UTC,                 # UTC for GMT
     "UTC": pytz.UTC,                 # UTC for UTC
 }
@@ -74,7 +74,6 @@ def main():
     time_data = df[args.column].tolist()
 
     time_data = [parse_datetime(time_str, args.autopsy_deleted) if isinstance(time_str, str) else None for time_str in time_data]
-    #print(time_data)
     time_data = [time for time in time_data if time is not None]
     hist, bins = generate_histogram(time_data, args.start_time, args.end_time, args.bucket_size, args.autopsy_deleted)
 
