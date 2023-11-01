@@ -42,7 +42,7 @@ Replace the following placeholders:
 - bucket_size: The desired bucket size in minutes.
 - start_time: The start time in the format '%Y-%m-%d %H:%M:%S'.
 - end_time: The end time in the format '%Y-%m-%d %H:%M:%S'.
-- You can include the -a option to handle timestamps with timezone information such as PST or PDT.
+- You can include the -a option to handle timestamps with timezone information in the format '%Y-%m-%d %H:%M:%S %Z', otherwise timestamps will be of the format '%Y-%m-%d %H:%M:%S.%f'.
 
 
 ### 3. View the Histogram:
